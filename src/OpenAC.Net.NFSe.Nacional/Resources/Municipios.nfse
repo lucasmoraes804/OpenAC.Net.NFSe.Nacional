@@ -59,5 +59,33 @@
         </Ambiente>
       </Ambiente>
     </serviceInfo>
+    <serviceInfo Id="3543402">
+      <Tipo>ISSNet</Tipo>
+      <Nome>RIBEIRÃO PRETO</Nome>
+      <UF>SP</UF>
+      <Ambiente>
+        <Ambiente Tipo="2">
+          <Enderecos>
+            <Endereco Tipo="CancelarNfse">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="ConsultarLoteDps">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="ConsultarNfseServicoPrestado">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="ConsultarNfseServicoTomado">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="ConsultarNfsePorFaixa">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="ConsultarNfseDps">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="RecepcionarLoteDps">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="GerarNfse">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="RecepcionarLoteDpsSincrono">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="ConsultarUrlNfse">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="ConsultarDadosCadastrais">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="ConsultarDpsDisponivel">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+            <Endereco Tipo="ValidarXml">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
+          </Enderecos>
+        </Ambiente>
+        <Ambiente Tipo="1">
+          <Enderecos>
+          </Enderecos>
+        </Ambiente>
+      </Ambiente>
+    </serviceInfo>
   </Services>
 </NFSeServices>
