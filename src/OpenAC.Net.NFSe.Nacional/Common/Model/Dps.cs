@@ -89,7 +89,7 @@ public sealed class Dps : DFeSignDocument<Dps>
                 : $"000{Informacoes.Prestador.CPF}";
 
             Informacoes.Id =
-                $"DPS{Informacoes.LocalidadeEmitente:D7}{tipo}{documneto}{Informacoes.Serie:D5}{Informacoes.NumeroDps:D15}";
+                $"DPS{Informacoes.LocalidadeEmitente.PadLeft(7, '0')}{tipo}{documneto}{Informacoes.Serie.PadLeft(5, '0')}{Informacoes.NumeroDps.PadLeft(15, '0')}";
         }
 
         var options = DFeSaveOptions.DisableFormatting;

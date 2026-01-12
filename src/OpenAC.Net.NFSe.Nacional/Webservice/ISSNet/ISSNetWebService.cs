@@ -28,7 +28,6 @@ public class ISSNetWebService : NacionalWebservice
     public async Task<GerarNfseResposta> GerarNfseAsync(Dps dps)
     {
         dps.Assinar(Configuracao);
-        ValidarSchema(SchemaNFSe.DPS, dps.Xml, dps.Versao);
 
         var documento = dps.Informacoes.Prestador.CPF ?? dps.Informacoes.Prestador.CNPJ;
 
@@ -46,7 +45,6 @@ public class ISSNetWebService : NacionalWebservice
     public async Task<CancelarNfseResposta> CancelarNfseAsync(PedidoRegistroEvento pedido)
     {
         pedido.Assinar(Configuracao);
-        ValidarSchema(SchemaNFSe.Evento, pedido.Xml, pedido.Versao);
 
         var documento = pedido.Informacoes.CPFAutor ?? pedido.Informacoes.CNPJAutor;
 
@@ -186,7 +184,7 @@ public class ISSNetWebService : NacionalWebservice
         where TResponse : DFeDocument<TResponse>
         where TRequest : DFeDocument<TRequest>
     {
-        var xmlEnvio = request.Xml;
+        var xmlEnvio = request.GetXml();
         ValidarSchema(SchemaNFSe.ISSNet, xmlEnvio, versao);
         var strResponse = await EnviarXmlAsync(xmlEnvio, tipoUrl, nomeArquivo, documento, versao);
         return DFeDocument<TResponse>.Load(strResponse);
@@ -221,10 +219,7 @@ public class ISSNetWebService : NacionalWebservice
     private void AssinarLoteDps(LoteDpsISSNet lote)
     {
         foreach (var dps in lote.Dps)
-        {
             dps.Assinar(Configuracao);
-            ValidarSchema(SchemaNFSe.DPS, dps.Xml, dps.Versao);
-        }
     }
 
     /// <summary>
