@@ -147,6 +147,7 @@ public sealed class NFSeArquivoConfig : DFeArquivosConfigBase<SchemaNFSe>
         {
             SchemaNFSe.DPS => Path.Combine(PathSchemas, $"DPS_v{dfeVersion}.xsd") ,
             SchemaNFSe.Evento => Path.Combine(PathSchemas, $"pedRegEvento_v{dfeVersion}.xsd"),
+            SchemaNFSe.ISSNet => Path.Combine(PathSchemas, "nfse.xsd"),
             _ => throw new ArgumentOutOfRangeException(nameof(schema), schema, null)
         };
     }

@@ -1,9 +1,14 @@
 using System;
+using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using OpenAC.Net.Core.Logging;
 using OpenAC.Net.DFe.Core.Document;
+using OpenAC.Net.DFe.Core.Extensions;
 using OpenAC.Net.NFSe.Nacional.Common;
 using OpenAC.Net.NFSe.Nacional.Common.Model;
 using OpenAC.Net.NFSe.Nacional.Common.Model.ISSNet;
@@ -170,7 +175,7 @@ public class ISSNetWebService : NacionalWebservice
         if (string.IsNullOrWhiteSpace(xml))
             throw new InvalidOperationException("O XML a validar deve ser informado.");
 
-        return await EnviarXmlAsync(xml, TipoUrl.ValidarXml, "ValidarXml", null);
+        return await EnviarXmlAsync(xml, TipoUrl.ValidarXml, "ValidarXml", null, Configuracao.Geral.Versao);
     }
 
     /// <summary>
@@ -183,31 +188,31 @@ public class ISSNetWebService : NacionalWebservice
     {
         var xmlEnvio = request.Xml;
         ValidarSchema(SchemaNFSe.ISSNet, xmlEnvio, versao);
-
-        this.Log().Debug($"ISSNet: [{nomeArquivo}][Envio] - {xmlEnvio}");
-        GravarArquivoEmDisco(xmlEnvio, $"{nomeArquivo}-env.xml", documento);
-
-        var strResponse = await EnviarXmlAsync(xmlEnvio, tipoUrl, nomeArquivo, documento);
+        var strResponse = await EnviarXmlAsync(xmlEnvio, tipoUrl, nomeArquivo, documento, versao);
         return DFeDocument<TResponse>.Load(strResponse);
     }
 
     /// <summary>
-    /// Envia o XML cru para o endpoint informado.
+    /// Envia o XML para o endpoint informado usando SOAP.
     /// </summary>
-    private async Task<string> EnviarXmlAsync(string xmlEnvio, TipoUrl tipoUrl, string nomeArquivo, string? documento)
+    private async Task<string> EnviarXmlAsync(string xmlEnvio, TipoUrl tipoUrl, string nomeArquivo, string? documento, VersaoNFSe versao)
     {
         string? url = ServiceInfo[Configuracao.WebServices.Ambiente][tipoUrl];
         if (string.IsNullOrWhiteSpace(url))
             throw new InvalidOperationException("URL nao encontrada na configuracao do servico.");
 
-        using var content = new StringContent(xmlEnvio, Encoding.UTF8, "application/xml");
-        HttpResponseMessage httpResponse = await SendAsync(content, HttpMethod.Post, url);
+        var soapEnvelope = CriarSoapEnvelope(tipoUrl, xmlEnvio, versao);
+        this.Log().Debug($"ISSNet: [{nomeArquivo}][Envio] - {soapEnvelope}");
+        GravarArquivoEmDisco(soapEnvelope, $"{nomeArquivo}-env.xml", documento);
+
+        var soapAction = CriarSoapAction(tipoUrl);
+        HttpResponseMessage httpResponse = await SendSoapAsync(soapEnvelope, url, soapAction);
 
         var strResponse = await httpResponse.Content.ReadAsStringAsync();
         this.Log().Debug($"ISSNet: [{nomeArquivo}][Resposta] - {strResponse}");
         GravarArquivoEmDisco(strResponse, $"{nomeArquivo}-resp.xml", documento);
 
-        return strResponse;
+        return ExtrairSoapResposta(strResponse) ?? strResponse;
     }
 
     /// <summary>
@@ -229,5 +234,67 @@ public class ISSNetWebService : NacionalWebservice
     {
         if (string.IsNullOrWhiteSpace(numeroNfse) && periodoEmissao == null && periodoCompetencia == null)
             throw new InvalidOperationException("NumeroNfse ou PeriodoEmissao ou PeriodoCompetencia deve ser informado.");
+    }
+
+    private static string CriarSoapEnvelope(TipoUrl tipoUrl, string xmlEnvio, VersaoNFSe versao)
+    {
+        var operacao = tipoUrl.ToString();
+        var versaoDados = versao.GetDFeValue();
+        var cabecalho = $"<cabecalho versao=\"{versaoDados}\"><versaoDados>{versaoDados}</versaoDados></cabecalho>";
+
+        var soapEnvelope = new StringBuilder();
+        soapEnvelope.Append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+        soapEnvelope.Append("<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" ");
+        soapEnvelope.Append("xmlns:ws=\"http://www.sped.fazenda.gov.br/nfse\">");
+        soapEnvelope.Append("<soap:Body>");
+        soapEnvelope.Append("<ws:").Append(operacao).Append(">");
+        soapEnvelope.Append("<nfseCabecMsg><![CDATA[").Append(cabecalho).Append("]]></nfseCabecMsg>");
+        soapEnvelope.Append("<nfseDadosMsg><![CDATA[").Append(xmlEnvio).Append("]]></nfseDadosMsg>");
+        soapEnvelope.Append("</ws:").Append(operacao).Append(">");
+        soapEnvelope.Append("</soap:Body></soap:Envelope>");
+
+        return soapEnvelope.ToString();
+    }
+
+    private static string CriarSoapAction(TipoUrl tipoUrl)
+    {
+        return $"http://www.sped.fazenda.gov.br/nfse/{tipoUrl}";
+    }
+
+    private static string? ExtrairSoapResposta(string xmlResposta)
+    {
+        try
+        {
+            var document = XDocument.Parse(xmlResposta);
+            var output = document.Descendants().FirstOrDefault(x => x.Name.LocalName == "outputXML");
+            return output?.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task<HttpResponseMessage> SendSoapAsync(string soapEnvelope, string url, string soapAction)
+    {
+        var handler = new HttpClientHandler();
+
+        handler.SslProtocols = (SslProtocols)Configuracao.WebServices.Protocolos;
+        handler.ClientCertificates.Add(Configuracao.Certificados.ObterCertificado());
+        var client = new HttpClient(handler);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
+
+        var assemblyName = GetType().Assembly.GetName();
+        var productValue = new ProductInfoHeaderValue("OpenAC.Net.NFSe.Nacional", assemblyName!.Version!.ToString());
+        var commentValue = new ProductInfoHeaderValue("(+https://github.com/OpenAC-Net/OpenAC.Net.NFSe.Nacional)");
+
+        request.Headers.UserAgent.Add(productValue);
+        request.Headers.UserAgent.Add(commentValue);
+        request.Headers.Add("SOAPAction", soapAction);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/xml"));
+        request.Content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
+
+        return await client.SendAsync(request);
     }
 }

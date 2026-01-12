@@ -24,5 +24,44 @@ public enum TipoUrl
     ConsultarChaveDps,
 
     /// <summary>Verificar existência do DPS.</summary>
-    ConsultaExisteDps
+    ConsultaExisteDps,
+
+    /// <summary>Cancelar NFS-e.</summary>
+    CancelarNfse,
+
+    /// <summary>Consultar lote de DPS.</summary>
+    ConsultarLoteDps,
+
+    /// <summary>Consultar NFS-e de serviÇos prestados.</summary>
+    ConsultarNfseServicoPrestado,
+
+    /// <summary>Consultar NFS-e de serviÇos tomados.</summary>
+    ConsultarNfseServicoTomado,
+
+    /// <summary>Consultar NFS-e por faixa.</summary>
+    ConsultarNfsePorFaixa,
+
+    /// <summary>Consultar NFS-e por DPS.</summary>
+    ConsultarNfseDps,
+
+    /// <summary>Recepcionar lote de DPS.</summary>
+    RecepcionarLoteDps,
+
+    /// <summary>Gerar NFS-e.</summary>
+    GerarNfse,
+
+    /// <summary>Recepcionar lote de DPS sincrono.</summary>
+    RecepcionarLoteDpsSincrono,
+
+    /// <summary>Consultar URL da NFS-e.</summary>
+    ConsultarUrlNfse,
+
+    /// <summary>Consultar dados cadastrais.</summary>
+    ConsultarDadosCadastrais,
+
+    /// <summary>Consultar DPS disponivel.</summary>
+    ConsultarDpsDisponivel,
+
+    /// <summary>Validar XML.</summary>
+    ValidarXml
 }

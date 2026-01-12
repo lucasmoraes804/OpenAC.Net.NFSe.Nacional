@@ -45,4 +45,9 @@ public enum SchemaNFSe
     /// Evento relacionado ao NFSe.
     /// </summary>
     Evento = 1,
+    
+    /// <summary>
+    /// Schema do provedor ISS.Net (Ribeirão Preto - SP).
+    /// </summary>
+    ISSNet = 2
 }
