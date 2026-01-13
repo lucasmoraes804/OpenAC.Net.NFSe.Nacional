@@ -204,7 +204,7 @@ public class TestEmissaoISSNet
         Assert.IsNotNull(resposta);
     }
 
-    private static ISSNetWebService CriarWebService(out ConfiguracaoNFSe configuracao)
+    private static ISSNetNotaControlWebService CriarWebService(out ConfiguracaoNFSe configuracao)
     {
         var openNFSeNacional = new OpenNFSeNacional();
         SetupOpenNFSeNacional.ConfiguracaoModeloNovoCenario1(
@@ -221,7 +221,7 @@ public class TestEmissaoISSNet
         configuracao.Arquivos.VersaoSchema = VersaoNFSe.Ve101;
         configuracao.Arquivos.PathSchemas = Path.Combine(AppContext.BaseDirectory, "Schemas", "ISSNet", "1.01");
 
-        return new ISSNetWebService(configuracao, serviceInfo);
+        return new ISSNetNotaControlWebService(configuracao, serviceInfo);
     }
 
     private static NFSeServiceInfo ObterServiceInfoIssNet()
