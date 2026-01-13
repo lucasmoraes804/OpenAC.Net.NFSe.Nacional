@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Authentication;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using OpenAC.Net.Core.Logging;
@@ -19,13 +21,44 @@ namespace OpenAC.Net.NFSe.Nacional.Webservice.ISSNet;
 
 public class ISSNetWebService : NacionalWebservice
 {
+    private static readonly JsonSerializerOptions JsonOptions = new();
+
     public ISSNetWebService(ConfiguracaoNFSe configuracaoNFSe, NFSeServiceInfo serviceInfo)
         : base(configuracaoNFSe, serviceInfo) { }
 
+    #region Overrides
+    
+    public override async Task<NFSeResponse<RespostaEnvioEvento>> EnviarEventoAsync(PedidoRegistroEvento evento)
+    {
+        if(!EventoCancelamento(evento.Informacoes.Evento))
+            throw new NotImplementedException("Apenas eventos de cancelamento são suportados pelo provedor ISS.Net.");
+        
+        var resposta = await CancelarNfseAsync(evento);
+        var retorno = CriarRespostaEnvioEvento(evento, resposta);
+        var jsonRetorno = JsonSerializer.Serialize(retorno, JsonOptions);
+        var sucesso = !PossuiErros(resposta.MensagensRetorno);
+
+        return NFSeResponse<RespostaEnvioEvento>.Create(evento.Xml, evento.Xml, jsonRetorno, sucesso, JsonOptions);
+    }
+
+    public override async Task<NFSeResponse<RespostaEnvioDps>> EnviarAsync(Dps dps)
+    {
+        var resposta = await GerarNfseAsync(dps);
+        var retorno = CriarRespostaEnvioDps(dps, resposta);
+        var jsonRetorno = JsonSerializer.Serialize(retorno, JsonOptions);
+        var sucesso = !PossuiErros(resposta.MensagensRetorno);
+
+        return NFSeResponse<RespostaEnvioDps>.Create(dps.Xml, dps.Xml, jsonRetorno, sucesso, JsonOptions);
+    }
+
+    #endregion Overrides
+
+    #region Métodos Privados
+    
     /// <summary>
     /// Gera NFS-e a partir de uma DPS.
     /// </summary>
-    public async Task<GerarNfseResposta> GerarNfseAsync(Dps dps)
+    private async Task<GerarNfseResposta> GerarNfseAsync(Dps dps)
     {
         dps.Assinar(Configuracao);
 
@@ -42,7 +75,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Solicita cancelamento de NFS-e via pedido de registro de evento.
     /// </summary>
-    public async Task<CancelarNfseResposta> CancelarNfseAsync(PedidoRegistroEvento pedido)
+    private async Task<CancelarNfseResposta> CancelarNfseAsync(PedidoRegistroEvento pedido)
     {
         pedido.Assinar(Configuracao);
 
@@ -59,7 +92,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Envia lote de DPS para processamento assincrono.
     /// </summary>
-    public async Task<EnviarLoteDpsResposta> RecepcionarLoteDpsAsync(LoteDpsISSNet lote)
+    private async Task<EnviarLoteDpsResposta> RecepcionarLoteDpsAsync(LoteDpsISSNet lote)
     {
         AssinarLoteDps(lote);
         var envio = new EnviarLoteDpsEnvio { LoteDps = lote };
@@ -70,7 +103,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Envia lote de DPS para processamento sincrono.
     /// </summary>
-    public async Task<EnviarLoteDpsSincronoResposta> RecepcionarLoteDpsSincronoAsync(LoteDpsISSNet lote)
+    private async Task<EnviarLoteDpsSincronoResposta> RecepcionarLoteDpsSincronoAsync(LoteDpsISSNet lote)
     {
         AssinarLoteDps(lote);
         var envio = new EnviarLoteDpsSincronoEnvio { LoteDps = lote };
@@ -82,7 +115,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Consulta o processamento de um lote de DPS pelo protocolo.
     /// </summary>
-    public Task<ConsultarLoteDpsResposta> ConsultarLoteDpsAsync(ConsultarLoteDpsEnvio envio)
+    private Task<ConsultarLoteDpsResposta> ConsultarLoteDpsAsync(ConsultarLoteDpsEnvio envio)
     {
         return EnviarXmlAsync<ConsultarLoteDpsResposta, ConsultarLoteDpsEnvio>(envio, TipoUrl.ConsultarLoteDps,
             $"ConsultarLoteDps-{envio.Protocolo}", envio.Prestador.CNPJ ?? envio.Prestador.CPF, VersaoNFSe.Ve101);
@@ -91,7 +124,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Consulta NFS-e a partir da identificacao do DPS.
     /// </summary>
-    public Task<ConsultarNfseDpsResposta> ConsultarNfseDpsAsync(ConsultarNfseDpsEnvio envio)
+    private Task<ConsultarNfseDpsResposta> ConsultarNfseDpsAsync(ConsultarNfseDpsEnvio envio)
     {
         return EnviarXmlAsync<ConsultarNfseDpsResposta, ConsultarNfseDpsEnvio>(envio, TipoUrl.ConsultarNfseDps,
             $"ConsultarNfseDps-{envio.IdentificacaoDps.NumeroDps}", envio.Prestador.CNPJ ?? envio.Prestador.CPF,
@@ -101,7 +134,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Consulta NFS-e por faixa de numero.
     /// </summary>
-    public Task<ConsultarNfseFaixaResposta> ConsultarNfsePorFaixaAsync(ConsultarNfseFaixaEnvio envio)
+    private Task<ConsultarNfseFaixaResposta> ConsultarNfsePorFaixaAsync(ConsultarNfseFaixaEnvio envio)
     {
         return EnviarXmlAsync<ConsultarNfseFaixaResposta, ConsultarNfseFaixaEnvio>(envio, TipoUrl.ConsultarNfsePorFaixa,
             $"ConsultarNfseFaixa-{envio.Faixa.NumeroInicial}-{envio.Faixa.NumeroFinal}",
@@ -111,7 +144,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Consulta NFS-e de servicos prestados por numero ou periodo.
     /// </summary>
-    public Task<ConsultarNfseServicoPrestadoResposta> ConsultarNfseServicoPrestadoAsync(ConsultarNfseServicoPrestadoEnvio envio)
+    private Task<ConsultarNfseServicoPrestadoResposta> ConsultarNfseServicoPrestadoAsync(ConsultarNfseServicoPrestadoEnvio envio)
     {
         ValidarPeriodoConsulta(envio.NumeroNfse, envio.PeriodoEmissao, envio.PeriodoCompetencia);
 
@@ -123,7 +156,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Consulta NFS-e de servicos tomados ou intermediados.
     /// </summary>
-    public Task<ConsultarNfseServicoTomadoResposta> ConsultarNfseServicoTomadoAsync(ConsultarNfseServicoTomadoEnvio envio)
+    private Task<ConsultarNfseServicoTomadoResposta> ConsultarNfseServicoTomadoAsync(ConsultarNfseServicoTomadoEnvio envio)
     {
         ValidarPeriodoConsulta(envio.NumeroNfse, envio.PeriodoEmissao, envio.PeriodoCompetencia);
         if (envio.Tomador == null && envio.Intermediario == null)
@@ -137,7 +170,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Consulta URLs de visualizacao/autenticidade da NFS-e.
     /// </summary>
-    public Task<ConsultarUrlNfseResposta> ConsultarUrlNfseAsync(ConsultarUrlNfseEnvio envio)
+    private Task<ConsultarUrlNfseResposta> ConsultarUrlNfseAsync(ConsultarUrlNfseEnvio envio)
     {
         ValidarPeriodoConsulta(envio.NumeroNfse, envio.PeriodoEmissao, envio.PeriodoCompetencia);
 
@@ -148,7 +181,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Consulta dados cadastrais do prestador.
     /// </summary>
-    public Task<ConsultarDadosCadastraisResposta> ConsultarDadosCadastraisAsync(ConsultarDadosCadastraisEnvio envio)
+    private Task<ConsultarDadosCadastraisResposta> ConsultarDadosCadastraisAsync(ConsultarDadosCadastraisEnvio envio)
     {
         return EnviarXmlAsync<ConsultarDadosCadastraisResposta, ConsultarDadosCadastraisEnvio>(envio,
             TipoUrl.ConsultarDadosCadastrais, $"ConsultarDadosCadastrais-{envio.Prestador.InscricaoMunicipal}",
@@ -158,7 +191,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Consulta DPS disponivel por prestador.
     /// </summary>
-    public Task<ConsultarDpsDisponivelResposta> ConsultarDpsDisponivelAsync(ConsultarDpsDisponivelEnvio envio)
+    private Task<ConsultarDpsDisponivelResposta> ConsultarDpsDisponivelAsync(ConsultarDpsDisponivelEnvio envio)
     {
         return EnviarXmlAsync<ConsultarDpsDisponivelResposta, ConsultarDpsDisponivelEnvio>(envio,
             TipoUrl.ConsultarDpsDisponivel, $"ConsultarDpsDisponivel-{envio.Pagina}",
@@ -168,7 +201,7 @@ public class ISSNetWebService : NacionalWebservice
     /// <summary>
     /// Envia XML para validacao no endpoint ISSNet.
     /// </summary>
-    public async Task<string> ValidarXmlAsync(string xml)
+    private async Task<string> ValidarXmlAsync(string xml)
     {
         if (string.IsNullOrWhiteSpace(xml))
             throw new InvalidOperationException("O XML a validar deve ser informado.");
@@ -292,4 +325,101 @@ public class ISSNetWebService : NacionalWebservice
 
         return await client.SendAsync(request);
     }
+
+    private RespostaEnvioDps CriarRespostaEnvioDps(Dps dps, GerarNfseResposta resposta)
+    {
+        var retorno = new RespostaEnvioDps
+        {
+            Ambiente = Configuracao.WebServices.Ambiente,
+            DataHoraProcessamento = DateTimeOffset.Now,
+            IdDps = ObterIdDps(dps, resposta),
+            ChaveAcesso = ObterChaveAcesso(dps, resposta),
+            XmlNFSe = ObterXmlNFSe(resposta)
+        };
+
+        retorno.Erros = ConverterMensagens(resposta.MensagensRetorno?.Mensagens);
+        retorno.Alertas = ConverterMensagens(resposta.ListaNfse?.Alertas?.Mensagens);
+
+        return retorno;
+    }
+
+    private RespostaEnvioEvento CriarRespostaEnvioEvento(PedidoRegistroEvento evento, CancelarNfseResposta resposta)
+    {
+        var retorno = new RespostaEnvioEvento
+        {
+            Ambiente = Configuracao.WebServices.Ambiente,
+            DataHoraProcessamento = DateTimeOffset.Now,
+            XmlEvento = evento.Xml
+        };
+
+        retorno.Erros = ConverterMensagens(resposta.MensagensRetorno?.Mensagens);
+
+        return retorno;
+    }
+
+    private static List<MensagemProcessamento> ConverterMensagens(IEnumerable<MensagemRetorno>? mensagens)
+    {
+        if (mensagens == null)
+            return new List<MensagemProcessamento>();
+
+        var lista = new List<MensagemProcessamento>();
+        foreach (var mensagem in mensagens)
+        {
+            var complemento = string.Empty;
+            if (mensagem.IdentificacaoDps != null)
+                complemento = $"DPS:{mensagem.IdentificacaoDps.NumeroDps}/{mensagem.IdentificacaoDps.SerieDps}";
+
+            lista.Add(new MensagemProcessamento
+            {
+                Mensagem = mensagem.Mensagem ?? string.Empty,
+                Codigo = mensagem.Codigo ?? string.Empty,
+                Descricao = mensagem.Correcao ?? string.Empty,
+                Complemento = complemento
+            });
+        }
+
+        return lista;
+    }
+
+    private static bool PossuiErros(ListaMensagemRetorno? mensagens)
+    {
+        return mensagens != null && mensagens.Mensagens.Count > 0;
+    }
+
+    private static string ObterIdDps(Dps dps, GerarNfseResposta resposta)
+    {
+        if (!string.IsNullOrWhiteSpace(dps.Informacoes.Id))
+            return dps.Informacoes.Id;
+
+        var compNfse = resposta.ListaNfse?.Nfses?.FirstOrDefault();
+        var idDps = compNfse?.Nfse?.Informacoes?.Dps?.Informacoes?.Id;
+        return idDps ?? string.Empty;
+    }
+
+    private static string ObterChaveAcesso(Dps dps, GerarNfseResposta resposta)
+    {
+        var compNfse = resposta.ListaNfse?.Nfses?.FirstOrDefault();
+        var chave = compNfse?.Nfse?.Informacoes?.Id;
+        if (!string.IsNullOrWhiteSpace(chave))
+            return chave;
+
+        return dps.Informacoes.Id;
+    }
+
+    private static string ObterXmlNFSe(GerarNfseResposta resposta)
+    {
+        var compNfse = resposta.ListaNfse?.Nfses?.FirstOrDefault();
+        return compNfse?.Nfse?.Xml ?? string.Empty;
+    }
+    
+    private bool EventoCancelamento(IEventoNFSe evento)
+    {
+        return evento is EventoCancelamento
+               || evento is EventoCancelamentoPorSubstituicao
+               || evento is EventoCancelamentoDeferido
+               || evento is EventoCancelamentoIndeferido
+               || evento is EventoCancelamentoOficio;
+    }
+
+    #endregion Private Methods
 }
