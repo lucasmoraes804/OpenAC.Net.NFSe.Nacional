@@ -86,6 +86,11 @@ public sealed class InfPedReg
     [DFeElement(TipoCampo.Str, "chNFSe", Min = 50, Max = 50, Ocorrencia = Ocorrencia.Obrigatoria)]
     public string ChNFSe { get; set; } = string.Empty;
     
+    /// <summary>
+    /// Número do pedido do registro de evento para o mesmo tipo de evento.
+    /// </summary>
+    [DFeElement(TipoCampo.Str, "nPedRegEvento", Min = 3, Max = 3, Ocorrencia = Ocorrencia.NaoObrigatoria)]
+    public string? NumPedidoRegEvento { get; set; }
 
     /// <summary>
     /// Evento relacionado à NFSe.

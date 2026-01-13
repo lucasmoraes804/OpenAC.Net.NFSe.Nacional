@@ -318,8 +318,9 @@ public class TestEmissaoISSNet
             Versao = configuracao.Geral.Versao,
             Informacoes = new InfPedReg
             {
-                Id = $"PRE{DadosFicticiosIssNet.ChaveNfse}{TipoEventoCod.Cancelamento}",
+                Id = $"PRE{DadosFicticiosIssNet.ChaveNfse}{TipoEventoCod.Cancelamento}{DadosFicticiosIssNet.NumeroPedidoRegistroEvento}",
                 ChNFSe = DadosFicticiosIssNet.ChaveNfse,
+                NumPedidoRegEvento = DadosFicticiosIssNet.NumeroPedidoRegistroEvento,
                 CNPJAutor = SetupOpenNFSeNacional.TipoInscricaoFederal == 2
                     ? SetupOpenNFSeNacional.InscricaoFederal
                     : null,
@@ -400,6 +401,7 @@ public class TestEmissaoISSNet
         public const string CodigoTributacaoMunicipio = "001";
         public const string CodigoNBS = "101011100";
         public const string InscricaoMunicipal = "001";
+        public const string NumeroPedidoRegistroEvento = "001";
         public const string DescricaoServico = "Servico de teste para ISSNet";
         public const decimal ValorServico = 100m;
         public static readonly DateTime DataInicial = new(2024, 01, 01);
