@@ -63,7 +63,7 @@
       <Tipo>ISSNet</Tipo>
       <Nome>RIBEIRÃO PRETO</Nome>
       <UF>SP</UF>
-      <Ambiente>
+      <Ambientes>
         <Ambiente Tipo="2">
           <Enderecos>
             <Endereco Tipo="CancelarNfse">https://nfse.issnetonline.com.br/wsnfsenacional/homologacao/nfse.asmx</Endereco>
@@ -85,7 +85,7 @@
           <Enderecos>
           </Enderecos>
         </Ambiente>
-      </Ambiente>
+      </Ambientes>
     </serviceInfo>
   </Services>
 </NFSeServices>

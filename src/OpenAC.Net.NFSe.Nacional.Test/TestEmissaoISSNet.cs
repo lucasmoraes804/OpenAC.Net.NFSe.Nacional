@@ -1,9 +1,4 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenAC.Net.DFe.Core.Common;
-using OpenAC.Net.NFSe.Nacional;
 using OpenAC.Net.NFSe.Nacional.Common;
 using OpenAC.Net.NFSe.Nacional.Common.Model;
 using OpenAC.Net.NFSe.Nacional.Common.Model.ISSNet;
@@ -241,11 +236,7 @@ public class TestEmissaoISSNet
 
         var prestador = new PrestadorDps
         {
-            Regime = new RegimeTributario
-            {
-                OptanteSimplesNacional = OptanteSimplesNacional.NaoOptante,
-                RegimeEspecial = RegimeEspecial.Nenhum
-            }
+            InscricaoMunicipal = DadosFicticiosIssNet.InscricaoMunicipal
         };
         
         if(DadosFicticiosIssNet.DocumentoPrestador.Length == 11)
@@ -264,7 +255,8 @@ public class TestEmissaoISSNet
             {
                 CodTributacaoNacional = DadosFicticiosIssNet.CodigoTributacaoNacional,
                 CodTributacaoMunicipio = DadosFicticiosIssNet.CodigoTributacaoMunicipio,
-                Descricao = DadosFicticiosIssNet.DescricaoServico
+                Descricao = DadosFicticiosIssNet.DescricaoServico,
+                CodNBS = DadosFicticiosIssNet.CodigoNBS
             }
         };
 
@@ -406,6 +398,8 @@ public class TestEmissaoISSNet
         public const string EmailPrestador = "teste@exemplo.com";
         public const string CodigoTributacaoNacional = "010101";
         public const string CodigoTributacaoMunicipio = "001";
+        public const string CodigoNBS = "101011100";
+        public const string InscricaoMunicipal = "001";
         public const string DescricaoServico = "Servico de teste para ISSNet";
         public const decimal ValorServico = 100m;
         public static readonly DateTime DataInicial = new(2024, 01, 01);
