@@ -17,9 +17,9 @@ using OpenAC.Net.NFSe.Nacional.Webservice.Nacional;
 
 namespace OpenAC.Net.NFSe.Nacional.Webservice.ISSNet;
 
-public class ISSNetNotaControlWebService : NacionalWebservice
+public class ISSNetWebService : NacionalWebservice
 {
-    public ISSNetNotaControlWebService(ConfiguracaoNFSe configuracaoNFSe, NFSeServiceInfo serviceInfo)
+    public ISSNetWebService(ConfiguracaoNFSe configuracaoNFSe, NFSeServiceInfo serviceInfo)
         : base(configuracaoNFSe, serviceInfo) { }
 
     /// <summary>

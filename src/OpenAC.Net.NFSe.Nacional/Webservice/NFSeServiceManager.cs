@@ -53,7 +53,7 @@ public sealed class NFSeServiceManager
             {
                 NFSeProvider.ISSNet, new Dictionary<VersaoNFSe, Type>
                 {
-                    { VersaoNFSe.Ve101, typeof(ISSNet.ISSNetNotaControlWebService) }
+                    { VersaoNFSe.Ve101, typeof(ISSNet.ISSNetWebService) }
                 }
             }
         };
