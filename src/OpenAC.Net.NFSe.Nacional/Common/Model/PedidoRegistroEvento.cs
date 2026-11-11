@@ -97,32 +97,5 @@ public sealed partial class PedidoRegistroEvento : DFeSignDocument<PedidoRegistr
         AssinarDocumento(configuracao.Certificados.ObterCertificado(), options, false);
     }
 
-    /// <summary>
-    /// Gera o XML do pedido sem assinatura (o grupo Signature é opcional no leiaute), com as mesmas opções de
-    /// <see cref="Assinar(ConfiguracaoNFSe)"/>. É o formato do pedido registrado pelo Emissor Nacional, por exemplo no
-    /// cancelamento por procuração.
-    /// </summary>
-    /// <param name="configuracao">Configuração da NFSe.</param>
-    /// <returns>XML do pedido de registro de evento.</returns>
-    public string GerarXml(ConfiguracaoNFSe configuracao)
-    {
-        var options = DFeSaveOptions.DisableFormatting;
-        if (configuracao.Geral.RetirarAcentos)
-            options |= DFeSaveOptions.RemoveAccents;
-
-        // a assinatura vazia criada no construtor seria serializada como <Signature> sem valores, que o schema rejeita;
-        // o serializador omite o grupo nulo, e a assinatura original volta no finally
-        var assinatura = Signature;
-        Signature = null!;
-        try
-        {
-            return GetXml(options);
-        }
-        finally
-        {
-            Signature = assinatura;
-        }
-    }
-
     #endregion Methods
 }
