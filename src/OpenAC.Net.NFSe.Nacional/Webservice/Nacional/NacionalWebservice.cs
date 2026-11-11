@@ -214,10 +214,17 @@ public class NacionalWebservice : NFSeWebserviceBase
     /// <param name="cancellationToken">Token para cancelar a operação assíncrona.</param>
     public override async Task<NFSeResponse<RespostaEnvioEvento>> EnviarEventoAsync(PedidoRegistroEvento evento, CancellationToken cancellationToken = default)
     {
+        // Sem assinatura o Xml do documento não é preenchido (quem o gera é o Assinar): gera o pedido sem o grupo Signature.
+        string xmlEvento;
         if (Configuracao.Geral.AssinarXml)
+        {
             evento.Assinar(Configuracao);
+            xmlEvento = evento.Xml;
+        }
+        else
+            xmlEvento = evento.GerarXml(Configuracao);
 
-        ValidarSchema(SchemaNFSe.Evento, evento.Xml, evento.Versao);
+        ValidarSchema(SchemaNFSe.Evento, xmlEvento, evento.Versao);
 
         var documento = evento.Informacoes.CPFAutor ?? evento.Informacoes.CNPJAutor;
 
@@ -225,12 +232,12 @@ public class NacionalWebservice : NFSeWebserviceBase
             ? evento.Informacoes.Id
             : $"{evento.Informacoes.ChNFSe}{evento.Informacoes.Evento}";
 
-        await GravarDpsEmDiscoAsync(evento.Xml, $"{prefixoNomeArquivoDps}_evento.xml",
+        await GravarDpsEmDiscoAsync(xmlEvento, $"{prefixoNomeArquivoDps}_evento.xml",
                 documento, evento.Informacoes.DhEvento.DateTime, true, cancellationToken);
 
         var envio = new EventoEnvio
         {
-            XmlEvento = evento.Xml
+            XmlEvento = xmlEvento
         };
 
         var content = JsonContent.Create(envio);
@@ -256,7 +263,7 @@ public class NacionalWebservice : NFSeWebserviceBase
             PropertyNameCaseInsensitive = true,
         };
 
-        var retorno = NFSeResponse<RespostaEnvioEvento>.Create(evento.Xml, strEnvio, strResponse, httpResponse.IsSuccessStatusCode, jsonOptions);
+        var retorno = NFSeResponse<RespostaEnvioEvento>.Create(xmlEvento, strEnvio, strResponse, httpResponse.IsSuccessStatusCode, jsonOptions);
 
         if (retorno is not { Sucesso: true, Resultado.XmlEvento: not null }) return retorno;
         
