@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using OpenAC.Net.DFe.Core;
 using OpenAC.Net.DFe.Core.Common;
 using OpenAC.Net.DFe.Core.Extensions;
+using OpenAC.Net.NFSe.Nacional.Common;
 using OpenAC.Net.NFSe.Nacional.Common.Model;
 using OpenAC.Net.NFSe.Nacional.Common.Types;
 
@@ -57,6 +58,43 @@ public class TestSchemaV101
         var valido = XmlSchemaValidation.ValidarXml(xml, CaminhoSchemaDps, out var erros, out _);
 
         await Assert.That(valido).IsTrue();
+    }
+
+    [Test]
+    public async Task PedidoCancelamentoSemAssinatura_GeraXmlSemSignatureEValidaContraSchemaV101()
+    {
+        // Formato do pedido registrado pelo Emissor Nacional no cancelamento por procuração: autor é o emitente e o
+        // pedido vai sem assinatura (ds:Signature é minOccurs="0" em TCPedRegEvt).
+        var evento = new PedidoRegistroEvento
+        {
+            Versao = VersaoNFSe.Ve101,
+            Informacoes = new InfPedReg
+            {
+                Id = "PRE35253002242250933000187000000000003926113070049043101101",
+                TipoAmbiente = DFeTipoAmbiente.Producao,
+                VersaoAplicacao = "OpenAC.NFSe.Nacional",
+                DhEvento = new DateTimeOffset(2026, 11, 11, 13, 30, 22, TimeSpan.FromHours(-3)),
+                CNPJAutor = "42250933000187",
+                ChNFSe = "35253002242250933000187000000000003926113070049043",
+                Evento = new EventoCancelamento
+                {
+                    CodMotivo = MotivoCancelamento.Outros,
+                    Motivo = "teste de emissão"
+                }
+            }
+        };
+
+        var xml = evento.GerarXml(new ConfiguracaoNFSe());
+
+        await Assert.That(xml).DoesNotContain("Signature");
+        await Assert.That(xml).Contains("<CNPJAutor>42250933000187</CNPJAutor>");
+        await Assert.That(xml).Contains("<chNFSe>35253002242250933000187000000000003926113070049043</chNFSe>");
+        await Assert.That(xml).Contains("<cMotivo>9</cMotivo>");
+
+        var caminhoSchema = Path.Combine(AppContext.BaseDirectory, "Schemas", VersaoNFSe.Ve101.GetDFeValue(), "pedRegEvento_v1.01.xsd");
+        var valido = XmlSchemaValidation.ValidarXml(xml, caminhoSchema, out var erros, out _);
+
+        await Assert.That(valido).IsTrue().Because(string.Join(" | ", erros));
     }
 
     [Test]
