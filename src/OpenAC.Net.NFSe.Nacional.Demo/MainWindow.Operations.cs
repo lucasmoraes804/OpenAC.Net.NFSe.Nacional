@@ -160,7 +160,7 @@ public partial class MainWindow
         if (fields == null) return;
         if (!int.TryParse(fields["nsu"], NumberStyles.None, CultureInfo.InvariantCulture, out var nsu) || nsu < 0)
             throw new ArgumentException("Informe um NSU inteiro maior ou igual a zero.");
-        ShowResponse(await WithServiceTimeoutAsync(ct => serviceClient.ConsultaNsuAsync(nsu, ct), token));
+        ShowResponse(await WithServiceTimeoutAsync(ct => serviceClient.ConsultaNsuAsync(nsu, cancellationToken: ct), token));
     }
 
     private async Task QueryBatchAsync(CancellationToken token)

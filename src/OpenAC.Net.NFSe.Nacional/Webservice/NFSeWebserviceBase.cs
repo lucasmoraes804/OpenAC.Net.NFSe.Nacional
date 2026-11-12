@@ -7,6 +7,9 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Schema;
 using OpenAC.Net.DFe.Core.Http;
 using OpenAC.Net.DFe.Core.Service;
@@ -292,7 +295,7 @@ public abstract class NFSeWebserviceBase : DFeHttpServiceClient, IOpenLog
             return;
 
         Configuracao.Arquivos.VersaoSchema = versao;
-        var schemaFile = Configuracao.Arquivos.GetSchema(schema);
+        var schemaFile = ResolverSchemaPorAmbiente(Configuracao.Arquivos.GetSchema(schema), xml);
         if (!File.Exists(schemaFile))
             throw new XmlSchemaException("Nao encontrou o arquivo schema do xml => " + schemaFile);
 
@@ -300,6 +303,30 @@ public abstract class NFSeWebserviceBase : DFeHttpServiceClient, IOpenLog
 
         throw new XmlSchemaValidationException("Erros gerado ao validar o schema do xml" + Environment.NewLine +
                                                string.Join(Environment.NewLine, errosSchema));
+    }
+
+    /// <summary>
+    /// O layout 1.01 mantém os schemas em subpastas por ambiente (<c>Homologacao</c> e <c>Producao</c>).
+    /// Quando o arquivo não existe na pasta informada, procura na subpasta correspondente ao
+    /// <c>tpAmb</c> do XML (2 = Homologação; qualquer outro valor = Produção).
+    /// </summary>
+    private static string ResolverSchemaPorAmbiente(string schemaFile, string xml)
+    {
+        if (File.Exists(schemaFile)) return schemaFile;
+
+        string? tpAmb = null;
+        try
+        {
+            tpAmb = XDocument.Parse(xml).Descendants().FirstOrDefault(x => x.Name.LocalName == "tpAmb")?.Value;
+        }
+        catch (XmlException)
+        {
+            // XML inválido: a validação reportará o erro; mantém o caminho original.
+        }
+
+        var pasta = Path.GetDirectoryName(schemaFile) ?? string.Empty;
+        var candidato = Path.Combine(pasta, tpAmb?.Trim() == "2" ? "Homologacao" : "Producao", Path.GetFileName(schemaFile));
+        return File.Exists(candidato) ? candidato : schemaFile;
     }
 
     /// <summary>
