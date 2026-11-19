@@ -380,7 +380,7 @@ public class TestSilTecnologia
         configuracao.Geral.Versao = VersaoNFSe.Ve101;
         configuracao.Geral.Salvar = false;
         configuracao.Arquivos.Salvar = false;
-        configuracao.Arquivos.PathSchemas = Path.Combine(AppContext.BaseDirectory, "Schemas", "1.01");
+        configuracao.Arquivos.PathSchemas = Path.Combine(AppContext.BaseDirectory, "Schemas", "1.01", "Homologacao");
         configuracao.Certificados.CertificadoBytes = pfx;
         configuracao.Certificados.Senha = "1234";
         configuracao.WebServices.Ambiente = DFeTipoAmbiente.Homologacao;
